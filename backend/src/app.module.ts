@@ -1,8 +1,9 @@
-import { Module } from '@nestjs/common';
+import { MiddlewareConsumer, Module, NestModule } from '@nestjs/common';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { EventsModule } from './models/events/events.module';
 import { UsersModule } from './models/users/users.module';
+import { RequestIpMiddleware } from './common/middleware/request-ip.middleware';
 
 @Module({
   imports: [EventsModule, UsersModule],
@@ -11,5 +12,8 @@ import { UsersModule } from './models/users/users.module';
     AppService,
   ],
 })
-export class AppModule {
+export class AppModule implements NestModule {
+  configure(consumer: MiddlewareConsumer) {
+    consumer.apply(RequestIpMiddleware).forRoutes('*');
+  }
 }
