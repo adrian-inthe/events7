@@ -90,7 +90,7 @@ export class EventsService {
     }
     if (this.events[index].type === 'ads') {
       if (!(await this.usersService.permissionToManipulateAds())) {
-        throw new Error('Permission to manipulate Ads denied');
+        throw new BadRequestException('Permission to manipulate Ads denied');
       }
     }
     this.events.splice(index, 1);
