@@ -1,8 +1,4 @@
-import {
-  BadRequestException,
-  Injectable,
-  NotFoundException,
-} from '@nestjs/common';
+import { BadRequestException, ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
 import { CreateEvent7Dto, Event7Dto } from './events.dto';
 import { validate } from 'class-validator';
 import { plainToClass } from 'class-transformer';
@@ -54,7 +50,7 @@ export class EventsService {
   async create(eventToCreate: CreateEvent7Dto): Promise<Event7> {
     if (eventToCreate.type === 'ads') {
       if (!(await this.usersService.permissionToManipulateAds())) {
-        throw new Error('Permission to manipulate Ads denied');
+        throw new ForbiddenException('Permission to manipulate Ads denied');
       }
     }
     const errors = await validate(plainToClass(CreateEvent7Dto, eventToCreate));
@@ -76,7 +72,7 @@ export class EventsService {
     }
     if (this.events[index].type === 'ads' || eventToUpdate.type === 'ads') {
       if (!(await this.usersService.permissionToManipulateAds())) {
-        throw new Error('Permission to manipulate Ads denied');
+        throw new ForbiddenException('Permission to manipulate Ads denied');
       }
     }
     this.events[index] = { ...this.events[index], ...eventToUpdate };
@@ -90,7 +86,7 @@ export class EventsService {
     }
     if (this.events[index].type === 'ads') {
       if (!(await this.usersService.permissionToManipulateAds())) {
-        throw new BadRequestException('Permission to manipulate Ads denied');
+        throw new ForbiddenException('Permission to manipulate Ads denied');
       }
     }
     this.events.splice(index, 1);

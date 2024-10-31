@@ -4,7 +4,6 @@ import { HttpService } from '@nestjs/axios';
 
 @Injectable()
 export class UsersService {
-  public static userIp: string | null = null;
   private readonly permissionApiKey: string;
   private readonly permissionApiSecret: string;
   private readonly permissionsEndpoint = `https://us-central1-o7tools.cloudfunctions.net/fun7-ad-partner`;
