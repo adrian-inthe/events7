@@ -1,10 +1,11 @@
 import {createRouter, createWebHistory} from 'vue-router';
-import HelloWorld from "../components/HelloWorld.vue";
+import EventsView from '../views/EventsView.vue';
 
 const routes = [
   {
     path: '/',
-    component: HelloWorld,
+    name: 'EventsView',
+    component: EventsView,
   },
 ];
 
