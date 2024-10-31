@@ -6,6 +6,7 @@ import {
 import { CreateEvent7Dto, Event7Dto } from './events.dto';
 import { validate } from 'class-validator';
 import { plainToClass } from 'class-transformer';
+import { UsersService } from '../users/users.service';
 
 export interface Event7 {
   readonly id: number;
@@ -36,6 +37,8 @@ export class EventsService {
   ];
   private nextId = 3;
 
+  constructor(private readonly usersService: UsersService) {}
+
   findAll(): Event7[] {
     return this.events;
   }
@@ -50,7 +53,9 @@ export class EventsService {
 
   async create(eventToCreate: CreateEvent7Dto): Promise<Event7> {
     if (eventToCreate.type === 'ads') {
-      // TODO
+      if (!(await this.usersService.permissionToManipulateAds())) {
+        throw new Error('Permission to manipulate Ads denied');
+      }
     }
     const errors = await validate(plainToClass(CreateEvent7Dto, eventToCreate));
     if (errors.length > 0) {
@@ -70,7 +75,9 @@ export class EventsService {
       throw new NotFoundException(`Event with ID ${id} not found`);
     }
     if (this.events[index].type === 'ads' || eventToUpdate.type === 'ads') {
-      // TODO
+      if (!(await this.usersService.permissionToManipulateAds())) {
+        throw new Error('Permission to manipulate Ads denied');
+      }
     }
     this.events[index] = { ...this.events[index], ...eventToUpdate };
     return this.events[index];
@@ -82,7 +89,9 @@ export class EventsService {
       throw new NotFoundException(`Event with ID ${id} not found`);
     }
     if (this.events[index].type === 'ads') {
-     // TODO
+      if (!(await this.usersService.permissionToManipulateAds())) {
+        throw new Error('Permission to manipulate Ads denied');
+      }
     }
     this.events.splice(index, 1);
   }

@@ -2,20 +2,29 @@ import { Event7, EventsService } from './events.service';
 import { CreateEvent7Dto, Event7Dto, Event7Type } from './events.dto';
 import { BadRequestException, NotFoundException } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
+import { UsersService } from '../users/users.service';
 
 let mockEventsList: Event7[];
 
 describe('EventsService', () => {
   let eventsService: EventsService;
+  let usersService: UsersService;
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         EventsService,
+        {
+          provide: UsersService,
+          useValue: {
+            permissionToManipulateAds: jest.fn(),
+          },
+        },
       ],
     }).compile();
 
     eventsService = module.get<EventsService>(EventsService);
+    usersService = module.get<UsersService>(UsersService);
 
     mockEventsList = [
       { id: 1, name: 'n1', description: 'd1', type: 'liveops', priority: 8 },
@@ -64,6 +73,42 @@ describe('EventsService', () => {
         type: 'liveops',
         priority: 7,
       });
+    });
+
+    it('should create a new event for valid data with Ads type when authorized', async () => {
+      jest
+        .spyOn(usersService, 'permissionToManipulateAds')
+        .mockResolvedValue(true);
+
+      const event = await eventsService.create({
+        name: 'New Event',
+        description: 'New Description',
+        type: Event7Type.LiveOps,
+        priority: 7,
+      });
+
+      expect(event).toEqual({
+        id: expect.any(Number),
+        name: 'New Event',
+        description: 'New Description',
+        type: 'liveops',
+        priority: 7,
+      });
+    });
+
+    it('should not create a new Ads event when not authorized', async () => {
+      jest
+        .spyOn(usersService, 'permissionToManipulateAds')
+        .mockResolvedValue(false);
+
+      await expect(
+        eventsService.create({
+          name: 'New Event',
+          description: 'New Description',
+          type: Event7Type.Ads,
+          priority: 7,
+        }),
+      ).rejects.toThrow('Permission to manipulate Ads denied');
     });
 
     it('should throw BadRequestException for invalid data', async () => {
@@ -144,6 +189,90 @@ describe('EventsService', () => {
       );
     });
 
+    it('should not update an event TO a type Ads when not authorized', async () => {
+      jest
+        .spyOn(usersService, 'permissionToManipulateAds')
+        .mockResolvedValue(false);
+
+      (eventsService as any).events = mockEventsList;
+      const notAdsEventIndex = mockEventsList.findIndex(
+        (event) => event.type !== 'ads',
+      );
+      const updatedEvent = getUpdatedEvent(mockEventsList[notAdsEventIndex], {
+        type: 'ads',
+      });
+      await expect(
+        eventsService.update(updatedEvent.id, updatedEvent as Event7Dto),
+      ).rejects.toThrow('Permission to manipulate Ads denied');
+      expect((eventsService as any).events[notAdsEventIndex]).toEqual(
+        mockEventsList[notAdsEventIndex],
+      );
+    });
+
+    it('should update an event TO a type Ads when authorized', async () => {
+      jest
+        .spyOn(usersService, 'permissionToManipulateAds')
+        .mockResolvedValue(true);
+
+      (eventsService as any).events = mockEventsList;
+      const notAdsEventIndex = mockEventsList.findIndex(
+        (event) => event.type !== 'ads',
+      );
+      const updatedEvent = getUpdatedEvent(mockEventsList[notAdsEventIndex], {
+        type: 'ads',
+      });
+      const result = await eventsService.update(
+        updatedEvent.id,
+        updatedEvent as Event7Dto,
+      );
+      expect(result).toEqual(updatedEvent);
+      expect((eventsService as any).events[notAdsEventIndex]).toEqual(
+        updatedEvent,
+      );
+    });
+
+    it('should not update an event WITH a type Ads when not authorized', async () => {
+      jest
+        .spyOn(usersService, 'permissionToManipulateAds')
+        .mockResolvedValue(false);
+
+      (eventsService as any).events = mockEventsList;
+      const adsEventIndex = mockEventsList.findIndex(
+        (event) => event.type === 'ads',
+      );
+      const updatedEvent = getUpdatedEvent(mockEventsList[adsEventIndex], {
+        name: 'updated',
+      });
+      await expect(
+        eventsService.update(updatedEvent.id, updatedEvent as Event7Dto),
+      ).rejects.toThrow('Permission to manipulate Ads denied');
+      expect((eventsService as any).events[adsEventIndex]).toEqual(
+        mockEventsList[adsEventIndex],
+      );
+    });
+
+    it('should update an event WITH a type Ads when authorized', async () => {
+      jest
+        .spyOn(usersService, 'permissionToManipulateAds')
+        .mockResolvedValue(true);
+
+      (eventsService as any).events = mockEventsList;
+      const adsEventIndex = mockEventsList.findIndex(
+        (event) => event.type === 'ads',
+      );
+      const updatedEvent = getUpdatedEvent(mockEventsList[adsEventIndex], {
+        name: 'updated',
+      });
+      const result = await eventsService.update(
+        updatedEvent.id,
+        updatedEvent as Event7Dto,
+      );
+      expect(result).toEqual(updatedEvent);
+      expect((eventsService as any).events[adsEventIndex]).toEqual(
+        updatedEvent,
+      );
+    });
+
     it('should throw NotFoundException if the event does not exist', async () => {
       (eventsService as any).events = mockEventsList;
       const updatedEvent = {
@@ -178,6 +307,45 @@ describe('EventsService', () => {
       await expect(eventsService.delete(999)).rejects.toThrow(
         NotFoundException,
       );
+    });
+
+    it('should not delete the Ads event with the given ID when not authorized', async () => {
+      jest
+        .spyOn(usersService, 'permissionToManipulateAds')
+        .mockResolvedValue(false);
+
+      (eventsService as any).events = mockEventsList;
+      const eventToDelete = (eventsService as any).events.find(
+        (event) => event.type === 'ads',
+      );
+      expect(eventToDelete).not.toBeUndefined();
+      await expect(eventsService.delete(eventToDelete.id)).rejects.toThrow(
+        'Permission to manipulate Ads denied',
+      );
+      expect(
+        (eventsService as any).events.find(
+          (event) => event.id === eventToDelete.id,
+        ),
+      ).not.toBeUndefined();
+    });
+
+    it('should delete the Ads event with the given ID when authorized', async () => {
+      jest
+        .spyOn(usersService, 'permissionToManipulateAds')
+        .mockResolvedValue(true);
+
+      (eventsService as any).events = mockEventsList;
+      const eventToDelete = (eventsService as any).events.find(
+        (event) => event.type === 'ads',
+      );
+      expect(eventToDelete).not.toBeUndefined();
+      const result = await eventsService.delete(eventToDelete.id);
+      expect(result).toBeUndefined();
+      expect(
+        (eventsService as any).events.find(
+          (event) => event.id === eventToDelete.id,
+        ),
+      ).toBeUndefined();
     });
   });
 });
