@@ -1,10 +1,16 @@
 <template>
   <div id="app">
-    <router-view />
+    <div class="h-[100vh] flex gap-5 m-5">
+      <DashboardNav />
+      <main class="flex-1">
+        <router-view />
+      </main>
+    </div>
   </div>
 </template>
 
 <script lang="ts" setup>
+import DashboardNav from "./components/DashboardNav.vue";
 </script>
 
 <style>
