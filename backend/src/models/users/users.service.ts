@@ -67,14 +67,17 @@ export class UsersService {
   }
 
   private async fetchUserCountryCode(): Promise<string | null> {
-    const tempIp = "113.29.77.255";
     try {
-      const response = await firstValueFrom(
-        this.httpService.get(
-          `${this.geolocationEndpoint}/${tempIp}?fields=countryCode`,
-        ),
-      );
-      return response.data.countryCode;
+      if (UsersService.userIp) {
+        const response = await firstValueFrom(
+          this.httpService.get(
+            `${this.geolocationEndpoint}/${UsersService.userIp}?fields=countryCode`,
+          ),
+        );
+        return response.data.countryCode;
+      } else {
+        return null;
+      }
     } catch (error) {
       console.error("Couldn't fetch country code", error);
       return null;
