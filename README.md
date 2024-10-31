@@ -113,11 +113,11 @@ Open a terminal and navigate to the project's `backend` directory.
     npm install
     
     # To start run:
-    npm start:dev 
+    npm run start:dev 
     # the app will be available on http://localhost:3000
 
     # To test run:
-    npm test:watch
+    npm test
 
 #### Frontend
 
@@ -127,8 +127,8 @@ Open a terminal and navigate to the project's `frontend` directory.
     npm install
     
     # To start run:
-    npm dev 
-    # then open http://localhost:8080
+    npm run dev 
+    # then open http://localhost:5173
 
     # To test run:
     npm test
